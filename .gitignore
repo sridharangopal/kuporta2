@@ -1,0 +1,38 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE - IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# IDE - VS Code
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# Compiled files
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# Test output
+test-output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Application specific
+src/test/resources/gold-copies/*.pdf

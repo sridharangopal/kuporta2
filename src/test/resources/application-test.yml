@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: document-generation-test
+
+ibm:
+  mq:
+    host: localhost
+    port: 1414
+    queue-manager: TEST_QM
+    channel: TEST.CHANNEL
+    queue: TEST.DOC.GEN.QUEUE
+    username: test_user
+    password: test_password
+
+document:
+  api:
+    base-url: http://localhost:8080
+    pdf-endpoint: /api/test/documents/pdf
+  input:
+    xml-folder: src/test/resources/test-inputs
+    gold-copies-folder: src/test/resources/gold-copies
+  poll:
+    timeout-minutes: 2
+    interval-seconds: 5
+
+logging:
+  level:
+    com.example.testsuite: DEBUG
+    org.springframework.jms: INFO
+    com.ibm.mq: INFO

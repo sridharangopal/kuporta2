@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: document-generation-test
+
+ibm:
+  mq:
+    host: localhost
+    port: 1414
+    queue-manager: QM1
+    channel: DEV.APP.SVRCONN
+    queue: DOC.GEN.REQUEST.QUEUE
+    username: app
+    password: password
+
+document:
+  api:
+    base-url: http://localhost:8080
+    pdf-endpoint: /api/documents/pdf
+  input:
+    xml-folder: src/test/resources/test-inputs
+    gold-copies-folder: src/test/resources/gold-copies
+  poll:
+    timeout-minutes: 5
+    interval-seconds: 10

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policy>
+    <metadata>
+        <policyNumber>POL-2024-001</policyNumber>
+        <documentType>INSURANCE_POLICY</documentType>
+        <version>1.0</version>
+        <generatedDate>2024-01-27T14:35:00-05:00</generatedDate>
+    </metadata>
+    <content>
+        <insured>
+            <firstName>John</firstName>
+            <lastName>Doe</lastName>
+            <dateOfBirth>1980-01-01</dateOfBirth>
+            <address>
+                <street>123 Main St</street>
+                <city>Anytown</city>
+                <state>NY</state>
+                <zipCode>12345</zipCode>
+            </address>
+        </insured>
+        <coverage>
+            <type>AUTO_INSURANCE</type>
+            <startDate>2024-01-01</startDate>
+            <endDate>2025-01-01</endDate>
+            <limits>
+                <bodilyInjury>300000</bodilyInjury>
+                <propertyDamage>100000</propertyDamage>
+                <collision>500</collision>
+            </limits>
+        </coverage>
+        <vehicle>
+            <make>Toyota</make>
+            <model>Camry</model>
+            <year>2023</year>
+            <vin>1HGCM82633A123456</vin>
+        </vehicle>
+    </content>
+</policy>
