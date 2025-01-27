@@ -6,11 +6,11 @@ ibm:
   mq:
     host: localhost
     port: 1414
-    queue-manager: TEST_QM
-    channel: TEST.CHANNEL
-    queue: TEST.DOC.GEN.QUEUE
-    username: test_user
-    password: test_password
+    queue-manager: QM1
+    channel: DEV.ADMIN.SVRCONN
+    queue: DEV.QUEUE.1
+    user: admin
+    password: passw0rd
 
 document:
   api:
