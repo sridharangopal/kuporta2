@@ -82,15 +82,23 @@ public class PDFComparator {
         BufferedImage diffImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = diffImage.createGraphics();
 
-        // Draw the first image
+        // Draw the first image as the base
         g2d.drawImage(img1, 0, 0, null);
 
-        // Set composite mode to highlight differences
+        // Set up for drawing differences
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
         g2d.setColor(Color.RED);
 
-        // Draw the second image with transparency to show differences
-        g2d.drawImage(img2, 0, 0, null);
+        // Draw only the different pixels in magenta
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                if (x < img1.getWidth() && y < img1.getHeight() &&
+                    x < img2.getWidth() && y < img2.getHeight() &&
+                    img1.getRGB(x, y) != img2.getRGB(x, y)) {
+                    g2d.fillRect(x, y, 1, 1);
+                }
+            }
+        }
         g2d.dispose();
 
         return diffImage;

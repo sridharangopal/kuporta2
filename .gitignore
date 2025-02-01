@@ -35,4 +35,4 @@ test-output/
 Thumbs.db
 
 # Application specific
-src/test/resources/gold-copies/*.pdf
+src/test/resources/**/*.pdf
