@@ -3,6 +3,7 @@ package com.example.testsuite.integration;
 import com.example.testsuite.processor.DocumentMessageProcessor;
 import com.example.testsuite.processor.XMLFileProcessor;
 import com.example.testsuite.utils.PDFComparator;
+import com.example.testsuite.utils.PDFComparator.ComparisonResult;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -20,7 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @Slf4j
 @SpringBootTest
@@ -83,14 +84,33 @@ public class DocumentGenerationIntegrationTest {
         // Get the gold copy PDF
         File goldCopyFile = Paths.get(goldCopiesFolderPath, "gold_" + policyNumber + ".pdf").toFile();
         
-        // Generate diff file path
-        File diffFile = testOutputPath.resolve("diff_" + policyNumber + ".png").toFile();
+        // Create comparison output directory
+        Path comparisonPath = testOutputPath.resolve("comparison_" + policyNumber);
+        Files.createDirectories(comparisonPath);
         
-        // Compare PDFs and assert
-        boolean isMatch = pdfComparator.compareAndGenerateDiff(generatedPdfFile, goldCopyFile, diffFile);
+        // Compare PDFs and get results
+        ComparisonResult result = pdfComparator.compare(generatedPdfFile, goldCopyFile, comparisonPath.toFile());
         
-        assertTrue(isMatch, 
-            String.format("Generated PDF does not match gold copy for policy %s. See diff: %s", 
-                policyNumber, diffFile.getAbsolutePath()));
+        // Log any differences found
+        if (result.hasDifferences()) {
+            log.error("Differences found in generated PDF for policy {}:", policyNumber);
+            if (!result.isVisuallyIdentical()) {
+                log.error("- Visual differences detected (see: {})", 
+                    comparisonPath.resolve("visual-diff.png"));
+            }
+            if (!result.getTextDifferences().isEmpty()) {
+                log.error("- {} text differences found", result.getTextDifferences().size());
+                result.getTextDifferences().forEach(diff -> log.error("  * {}", diff));
+            }
+            if (!result.getFontDifferences().isEmpty()) {
+                log.error("- {} font differences found", result.getFontDifferences().size());
+                result.getFontDifferences().forEach(diff -> log.error("  * {}", diff));
+            }
+        }
+        
+        // Assert no differences were found
+        assertFalse(result.hasDifferences(), 
+            String.format("Generated PDF does not match gold copy for policy %s. See detailed report at: %s", 
+                policyNumber, comparisonPath.resolve("comparison-report.txt")));
     }
 }

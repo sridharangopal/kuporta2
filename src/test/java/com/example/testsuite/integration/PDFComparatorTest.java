@@ -1,6 +1,6 @@
 package com.example.testsuite.integration;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +21,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.example.testsuite.utils.PDFComparator;
+import com.example.testsuite.utils.PDFComparator.ComparisonResult;
+import com.example.testsuite.utils.TextComparator;
+import com.example.testsuite.utils.FontComparator;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,19 +46,53 @@ public class PDFComparatorTest {
     }
 
     @Test
-    @Disabled
-    public void testPDFComparator() throws IOException {
-        // Get the before copy PDF
+    void testComprehensivePDFComparison() throws IOException {
+        // Get the test PDF files
         File beforeFile = Paths.get("src/test/resources/pdfs/Before.pdf").toFile();
-        // Get the gold copy PDF
         File afterFile = Paths.get("src/test/resources/pdfs/After.pdf").toFile();
-        // Generate diff file path
-        File diffFile = testOutputPath.resolve("diff.png").toFile();
-        // Compare PDFs and assert
-        boolean isMatch = pdfComparator.compareAndGenerateDiff(afterFile, beforeFile, diffFile);
+        
+        // Compare PDFs and get comprehensive results
+        ComparisonResult result = pdfComparator.compare(beforeFile, afterFile, testOutputPath.toFile());
+        
+        // Assert the results
+        assertAll(
+            () -> assertTrue(result.isVisuallyIdentical(), 
+                "Visual differences found. Check diff at: " + testOutputPath.resolve("visual-diff.png")),
+            () -> assertTrue(result.getTextDifferences().isEmpty(),
+                "Text differences found. Check report at: " + testOutputPath.resolve("comparison-report.txt")),
+            () -> assertTrue(result.getFontDifferences().isEmpty(),
+                "Font differences found. Check report at: " + testOutputPath.resolve("comparison-report.txt"))
+        );
+    }
 
-        assertTrue(isMatch,
-                String.format("Generated PDF does not match before copy. See diff: %s", diffFile.getAbsolutePath()));
+    @Test
+    void testPDFComparisonWithDifferences() throws IOException {
+        // Create test files with known differences
+        File file1 = testOutputPath.resolve("test1.pdf").toFile();
+        File file2 = testOutputPath.resolve("test2.pdf").toFile();
+        
+        // Copy test files from resources
+        Files.copy(
+            Paths.get("src/test/resources/pdfs/Mockup/AS 2112 03 16.pdf"), 
+            file1.toPath()
+        );
+        Files.copy(
+            Paths.get("src/test/resources/pdfs/Proofs/AS 2112 03 16.pdf"), 
+            file2.toPath()
+        );
+
+        // Compare PDFs
+        ComparisonResult result = pdfComparator.compare(file1, file2, testOutputPath.toFile());
+
+        // Verify that differences are detected
+        assertTrue(result.hasDifferences(), 
+            "Expected to find differences between the PDFs");
+
+        // If differences were found, verify the output files exist
+        assertTrue(Files.exists(testOutputPath.resolve("visual-diff.png")),
+            "Visual diff file should be generated when differences are found");
+        assertTrue(Files.exists(testOutputPath.resolve("comparison-report.txt")),
+            "Comparison report should be generated");
     }
 
     static Stream<String> pdfFileNames() throws IOException {
@@ -85,17 +122,30 @@ public class PDFComparatorTest {
         Path comparisonPath = testOutputPath.resolve(pdfFileName.replace(".pdf", ""));
         Files.createDirectories(comparisonPath);
         
-        File diffFile = comparisonPath.resolve("diff.png").toFile();
-        
-        // Compare PDFs and assert
-        boolean isMatch = pdfComparator.compareAndGenerateDiff(
+        // Compare PDFs and get results
+        ComparisonResult result = pdfComparator.compare(
             proofFile.toFile(),
             mockupFile.toFile(),
-            diffFile
+            comparisonPath.toFile()
         );
 
-        assertTrue(isMatch,
-            String.format("PDF %s does not match proof copy. See diff: %s", 
-                pdfFileName, diffFile.getAbsolutePath()));
+        // Log the results
+        if (result.hasDifferences()) {
+            log.info("Differences found in {}:", pdfFileName);
+            if (!result.isVisuallyIdentical()) {
+                log.info("- Visual differences detected");
+            }
+            if (!result.getTextDifferences().isEmpty()) {
+                log.info("- {} text differences found", result.getTextDifferences().size());
+            }
+            if (!result.getFontDifferences().isEmpty()) {
+                log.info("- {} font differences found", result.getFontDifferences().size());
+            }
+        }
+
+        // Assert the comparison
+        assertFalse(result.hasDifferences(),
+            String.format("PDF %s has differences with proof copy. See report at: %s", 
+                pdfFileName, comparisonPath.resolve("comparison-report.txt")));
     }
 }
