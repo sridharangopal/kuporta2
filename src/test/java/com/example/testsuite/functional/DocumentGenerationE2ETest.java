@@ -1,6 +1,7 @@
-package com.example.testsuite.integration;
+package com.example.testsuite.functional;
 
 import com.example.testsuite.processor.DocumentMessageProcessor;
+import com.example.testsuite.processor.SoapEnvelopProcessor;
 import com.example.testsuite.processor.XMLFileProcessor;
 import com.example.testsuite.utils.PDFComparator;
 import com.example.testsuite.utils.PDFComparator.ComparisonResult;
@@ -26,10 +27,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @Slf4j
 @SpringBootTest
 @ActiveProfiles("test")
-public class DocumentGenerationIntegrationTest {
+public class DocumentGenerationE2ETest {
 
     @Autowired
     private XMLFileProcessor xmlFileProcessor;
+
+    @Autowired
+    private SoapEnvelopProcessor soapEnvelopProcessor;
 
     @Autowired
     private DocumentMessageProcessor messageProcessor;
@@ -65,6 +69,7 @@ public class DocumentGenerationIntegrationTest {
     void testDocumentGeneration(File xmlFile) throws Exception {
         log.info("Testing document generation for file: {}", xmlFile.getName());
 
+        // SENDING BLOCK //
         // Read XML content
         String xmlContent = xmlFileProcessor.readXMLContent(xmlFile);
         
@@ -72,8 +77,20 @@ public class DocumentGenerationIntegrationTest {
         String policyNumber = xmlFileProcessor.extractPolicyNumber(xmlContent);
         
         // Send XML to MQ
-        messageProcessor.sendToQueue(xmlContent);
+        // messageProcessor.sendToQueue(xmlContent);
+
+        // Get the full Soap Envelope
+        String soapEnvelope = soapEnvelopProcessor.createSoapEnvelope("PK0001", "ETE", "fake@email.com", xmlContent);
         
+        // Send XML to web service
+        String response = messageProcessor.sendToWebService(soapEnvelope);
+
+        // Assert that the response is successful
+        assertFalse(response.contains("error"), 
+            String.format("Error response received for policy %s: %s", policyNumber, response));
+
+
+        // RECEIVING BLOCK //
         // Wait for and retrieve the generated PDF
         byte[] pdfContent = messageProcessor.retrievePDF(policyNumber);
         

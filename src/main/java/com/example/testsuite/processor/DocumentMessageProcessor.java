@@ -8,6 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.ws.client.core.WebServiceTemplate;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.StringReader;
+import java.io.StringWriter;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
@@ -19,6 +24,7 @@ public class DocumentMessageProcessor {
 
     private final JmsTemplate jmsTemplate;
     private final RestTemplate restTemplate;
+    private final WebServiceTemplate webServiceTemplate;
 
     @Value("${ibm.mq.queue}")
     private String queueName;
@@ -35,6 +41,12 @@ public class DocumentMessageProcessor {
     @Value("${document.poll.interval-seconds}")
     private int intervalSeconds;
 
+    @Value("${webservice.base-url}")
+    private String webserviceBaseUrl;
+
+    @Value("${webservice.resource}")
+    private String webserviceResource;
+
     /**
      * Sends an XML message to the configured MQ queue
      * @param xmlContent the XML content to send
@@ -47,6 +59,31 @@ public class DocumentMessageProcessor {
         } catch (Exception e) {
             log.error("Failed to send message to queue", e);
             throw new RuntimeException("Failed to send message to queue", e);
+        }
+    }
+
+    /**
+     * Sends XML payload to a webservice endpoint
+     * @param xmlContent the XML content to send
+     * @return the response message from the webservice
+     */
+    public String sendToWebService(String xmlContent) {
+        log.info("Sending message to API: {}/{}", webserviceBaseUrl, webserviceResource);
+        var fullUrl = webserviceBaseUrl + "/" + webserviceResource;
+
+        try {
+            StreamSource source = new StreamSource(new StringReader(xmlContent));
+            StringWriter writer = new StringWriter();
+            StreamResult result = new StreamResult(writer);
+            
+            webServiceTemplate.sendSourceAndReceiveToResult(fullUrl, source, result);
+            
+            String response = writer.toString();
+            log.info("Message sent successfully");
+            return response;
+        } catch (Exception e) {
+            log.error("Failed to send message to API", e);
+            throw new RuntimeException("Failed to send message to API", e);
         }
     }
 

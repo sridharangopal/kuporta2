@@ -60,8 +60,6 @@ public class XMLFileProcessor {
      * @return the extracted policy number
      */
     public String extractPolicyNumber(String xmlContent) {
-        // TODO: Implement actual XML parsing logic based on the XML structure
-        // This is just a placeholder implementation
         int startIndex = xmlContent.indexOf("<policyNumber>");
         int endIndex = xmlContent.indexOf("</policyNumber>");
         if (startIndex != -1 && endIndex != -1) {

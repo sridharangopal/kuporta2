@@ -23,6 +23,10 @@ document:
     timeout-minutes: 2
     interval-seconds: 5
 
+webservice:
+  base-url: http://localhost:8080
+  resource: /api/test/documents
+
 logging:
   level:
     com.example.testsuite: DEBUG

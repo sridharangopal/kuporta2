@@ -1,4 +1,4 @@
-package com.example.testsuite.integration;
+package com.example.testsuite.functional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
