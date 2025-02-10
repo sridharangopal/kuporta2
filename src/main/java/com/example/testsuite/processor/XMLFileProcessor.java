@@ -67,4 +67,21 @@ public class XMLFileProcessor {
         }
         throw new IllegalArgumentException("Could not find policy number in XML content");
     }
+    /**
+     * Updates the PassDate value in the XML content
+     * @param xmlContent the XML content to modify
+     * @param newPassDate the new pass date value to set
+     * @return the modified XML content
+     * @throws IllegalArgumentException if PassDate tags are not found in the XML
+     */
+    public String updatePassDate(String xmlContent, String newPassDate) {
+        int startIndex = xmlContent.indexOf("<PassDate>");
+        int endIndex = xmlContent.indexOf("</PassDate>");
+        if (startIndex != -1 && endIndex != -1) {
+            String beforePassDate = xmlContent.substring(0, startIndex + 10);
+            String afterPassDate = xmlContent.substring(endIndex);
+            return beforePassDate + newPassDate + afterPassDate;
+        }
+        throw new IllegalArgumentException("Could not find PassDate tags in XML content");
+    }
 }

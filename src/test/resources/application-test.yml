@@ -32,3 +32,6 @@ logging:
     com.example.testsuite: DEBUG
     org.springframework.jms: INFO
     com.ibm.mq: INFO
+    org.springframework.ws.client.MessageTracing.sent: DEBUG
+    org.springframework.ws.client.MessageTracing.received: DEBUG
+    org.springframework.ws.server.MessageTracing: DEBUG

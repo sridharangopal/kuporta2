@@ -2,6 +2,7 @@
 <policy>
     <metadata>
         <policyNumber>POL-2024-001</policyNumber>
+        <PassDate>2024-01-27</PassDate>
         <documentType>INSURANCE_POLICY</documentType>
         <version>1.0</version>
         <generatedDate>2024-01-27T14:35:00-05:00</generatedDate>
