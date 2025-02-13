@@ -34,7 +34,25 @@ public class PDFComparator {
      * @return ComparisonResult containing all differences found
      * @throws IOException if there's an error processing the PDFs
      */
+    /**
+     * Compare PDFs using line-by-line text comparison (legacy mode)
+     */
     public ComparisonResult compare(File generatedPdf, File goldCopyPdf, File outputDir) throws IOException {
+        return compare(generatedPdf, goldCopyPdf, outputDir, TextComparator.ComparisonMode.LINE_BY_LINE, false);
+    }
+
+    /**
+     * Compare PDFs and generate comprehensive diff report including visual, text, and font differences
+     * @param generatedPdf the generated PDF file
+     * @param goldCopyPdf the gold copy PDF file
+     * @param outputDir directory to save diff outputs
+     * @param mode the text comparison mode to use
+     * @param deepDetect when true, considers whitespace differences as changes
+     * @return ComparisonResult containing all differences found
+     * @throws IOException if there's an error processing the PDFs
+     */
+    public ComparisonResult compare(File generatedPdf, File goldCopyPdf, File outputDir,
+            TextComparator.ComparisonMode mode, boolean deepDetect) throws IOException {
         if (!outputDir.exists() && !outputDir.mkdirs()) {
             throw new IOException("Failed to create output directory: " + outputDir);
         }
@@ -45,8 +63,8 @@ public class PDFComparator {
         File diffImage = new File(outputDir, "visual-diff.png");
         result.setVisuallyIdentical(compareAndGenerateDiff(generatedPdf, goldCopyPdf, diffImage));
         
-        // Text comparison
-        List<TextComparator.TextDifference> textDiffs = textComparator.compareContent(generatedPdf, goldCopyPdf);
+        // Text comparison with specified mode
+        List<TextComparator.TextDifference> textDiffs = textComparator.compareContent(generatedPdf, goldCopyPdf, mode, deepDetect);
         result.setTextDifferences(textDiffs);
         
         // Font comparison

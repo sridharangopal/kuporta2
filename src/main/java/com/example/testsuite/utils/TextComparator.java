@@ -14,8 +14,37 @@ import java.util.List;
 @Component
 public class TextComparator {
 
+    public enum ComparisonMode {
+        LINE_BY_LINE,
+        WHOLE_DOCUMENT
+    }
+
     /**
-     * Compares text content of two PDFs and returns differences
+     * Compares text content of two PDFs and returns differences using the specified comparison mode
+     * @param generatedPdf the generated PDF file
+     * @param goldCopyPdf the gold copy PDF file
+     * @param mode the comparison mode to use
+     * @param deepDetect when true, considers whitespace differences as changes
+     * @return List of text differences found
+     * @throws IOException if there's an error processing the PDFs
+     */
+    public List<TextDifference> compareContent(File generatedPdf, File goldCopyPdf,
+            ComparisonMode mode, boolean deepDetect) throws IOException {
+        try (PDDocument generatedDoc = PDDocument.load(generatedPdf);
+             PDDocument goldCopyDoc = PDDocument.load(goldCopyPdf)) {
+
+            PDFTextStripper stripper = new PDFTextStripper();
+            String generatedText = stripper.getText(generatedDoc);
+            String goldCopyText = stripper.getText(goldCopyDoc);
+
+            return mode == ComparisonMode.LINE_BY_LINE ?
+                findLineByLineDifferences(generatedText, goldCopyText, deepDetect) :
+                findDocumentDifferences(generatedText, goldCopyText, deepDetect);
+        }
+    }
+
+    /**
+     * Legacy method for line-by-line comparison
      * @param generatedPdf the generated PDF file
      * @param goldCopyPdf the gold copy PDF file
      * @param deepDetect when true, considers whitespace differences as changes
@@ -30,7 +59,7 @@ public class TextComparator {
             String generatedText = stripper.getText(generatedDoc);
             String goldCopyText = stripper.getText(goldCopyDoc);
 
-            return findDifferences(generatedText, goldCopyText, deepDetect);
+            return findLineByLineDifferences(generatedText, goldCopyText, deepDetect);
         }
     }
 
@@ -41,7 +70,7 @@ public class TextComparator {
         return compareContent(generatedPdf, goldCopyPdf, false);
     }
 
-    private List<TextDifference> findDifferences(String text1, String text2, boolean deepDetect) {
+    private List<TextDifference> findLineByLineDifferences(String text1, String text2, boolean deepDetect) {
         List<TextDifference> differences = new ArrayList<>();
         String[] lines1 = text1.split("\\r?\\n");
         String[] lines2 = text2.split("\\r?\\n");
@@ -87,6 +116,37 @@ public class TextComparator {
             j++;
         }
 
+        return differences;
+    }
+
+    private List<TextDifference> findDocumentDifferences(String text1, String text2, boolean deepDetect) {
+        String doc1 = deepDetect ? text1 : normalizeWhitespace(text1);
+        String doc2 = deepDetect ? text2 : normalizeWhitespace(text2);
+
+        List<TextDifference> differences = new ArrayList<>();
+        if (!doc1.equals(doc2)) {
+            // Find the first differing character position
+            int pos = 0;
+            while (pos < doc1.length() && pos < doc2.length() && doc1.charAt(pos) == doc2.charAt(pos)) {
+                pos++;
+            }
+
+            // Extract context around the difference
+            int contextStart = Math.max(0, pos - 50);
+            int contextEnd1 = Math.min(doc1.length(), pos + 50);
+            int contextEnd2 = Math.min(doc2.length(), pos + 50);
+
+            String context1 = doc1.substring(contextStart, contextEnd1);
+            String context2 = doc2.substring(contextStart, contextEnd2);
+
+            differences.add(new TextDifference(
+                0, // Use 0 for whole document comparison
+                0,
+                context1,
+                context2,
+                TextDifference.DiffType.MODIFIED
+            ));
+        }
         return differences;
     }
 

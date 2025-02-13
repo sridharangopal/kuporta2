@@ -19,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.example.testsuite.utils.PDFComparator;
 import com.example.testsuite.utils.PDFComparator.ComparisonResult;
+import com.example.testsuite.utils.TextComparator;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -51,9 +52,9 @@ public class PDFComparatorTest {
         }
     }
 
-    @ParameterizedTest(name = "Compare PDF: {0}")
+    @ParameterizedTest(name = "Compare PDF Line by Line: {0}")
     @MethodSource("pdfFileNames")
-    void testPDFPairComparison(String pdfFileName) throws IOException {
+    void testPDFPairComparisonLineByLine(String pdfFileName) throws IOException {
         // Get the mockup and proof files
         Path mockupFile = Paths.get("src/test/resources/pdfs/Mockup", pdfFileName);
         Path proofFile = Paths.get("src/test/resources/pdfs/Proofs", pdfFileName);
@@ -91,5 +92,97 @@ public class PDFComparatorTest {
         assertFalse(result.hasDifferences(),
             String.format("PDF %s has differences with proof copy. See report at: %s", 
                 pdfFileName, comparisonPath.resolve("comparison-report.txt")));
+    }
+
+    @ParameterizedTest(name = "Compare PDF Whole Document: {0}")
+    @MethodSource("pdfFileNames")
+    void testPDFPairComparisonWholeDocument(String pdfFileName) throws IOException {
+        // Get the mockup and proof files
+        Path mockupFile = Paths.get("src/test/resources/pdfs/Mockup", pdfFileName);
+        Path proofFile = Paths.get("src/test/resources/pdfs/Proofs", pdfFileName);
+
+        // Ensure both files exist
+        assertTrue(Files.exists(mockupFile), "Mockup file not found: " + mockupFile);
+        assertTrue(Files.exists(proofFile), "Proof file not found: " + proofFile);
+
+        // Create a subdirectory for this comparison
+        Path comparisonPath = testOutputPath.resolve(pdfFileName.replace(".pdf", "") + "_whole");
+        Files.createDirectories(comparisonPath);
+        
+        // Compare PDFs using whole document mode
+        ComparisonResult result = pdfComparator.compare(
+            proofFile.toFile(),
+            mockupFile.toFile(),
+            comparisonPath.toFile(),
+            TextComparator.ComparisonMode.WHOLE_DOCUMENT,
+            false
+        );
+
+        // Log and assert results
+        logComparisonResults(pdfFileName, result);
+        assertFalse(result.hasDifferences(),
+            String.format("PDF %s has differences with proof copy (whole document mode). See report at: %s",
+                pdfFileName, comparisonPath.resolve("comparison-report.txt")));
+    }
+
+    @ParameterizedTest(name = "Compare PDF with Deep Detection: {0}")
+    @MethodSource("pdfFileNames")
+    void testPDFPairComparisonWithDeepDetection(String pdfFileName) throws IOException {
+        // Get the mockup and proof files
+        Path mockupFile = Paths.get("src/test/resources/pdfs/Mockup", pdfFileName);
+        Path proofFile = Paths.get("src/test/resources/pdfs/Proofs", pdfFileName);
+
+        // Ensure both files exist
+        assertTrue(Files.exists(mockupFile), "Mockup file not found: " + mockupFile);
+        assertTrue(Files.exists(proofFile), "Proof file not found: " + proofFile);
+
+        // Create subdirectories for both comparison modes
+        Path lineByLinePath = testOutputPath.resolve(pdfFileName.replace(".pdf", "") + "_deep_line");
+        Path wholeDocPath = testOutputPath.resolve(pdfFileName.replace(".pdf", "") + "_deep_whole");
+        Files.createDirectories(lineByLinePath);
+        Files.createDirectories(wholeDocPath);
+        
+        // Compare PDFs with deep detection in both modes
+        ComparisonResult lineResult = pdfComparator.compare(
+            proofFile.toFile(),
+            mockupFile.toFile(),
+            lineByLinePath.toFile(),
+            TextComparator.ComparisonMode.LINE_BY_LINE,
+            true
+        );
+
+        ComparisonResult wholeResult = pdfComparator.compare(
+            proofFile.toFile(),
+            mockupFile.toFile(),
+            wholeDocPath.toFile(),
+            TextComparator.ComparisonMode.WHOLE_DOCUMENT,
+            true
+        );
+
+        // Log and assert results
+        logComparisonResults(pdfFileName + " (deep line-by-line)", lineResult);
+        logComparisonResults(pdfFileName + " (deep whole document)", wholeResult);
+        
+        assertFalse(lineResult.hasDifferences(),
+            String.format("PDF %s has differences with proof copy (deep line-by-line). See report at: %s",
+                pdfFileName, lineByLinePath.resolve("comparison-report.txt")));
+        assertFalse(wholeResult.hasDifferences(),
+            String.format("PDF %s has differences with proof copy (deep whole document). See report at: %s",
+                pdfFileName, wholeDocPath.resolve("comparison-report.txt")));
+    }
+
+    private void logComparisonResults(String pdfFileName, ComparisonResult result) {
+        if (result.hasDifferences()) {
+            log.info("Differences found in {}:", pdfFileName);
+            if (!result.isVisuallyIdentical()) {
+                log.info("- Visual differences detected");
+            }
+            if (!result.getTextDifferences().isEmpty()) {
+                log.info("- {} text differences found", result.getTextDifferences().size());
+            }
+            if (!result.getFontDifferences().isEmpty()) {
+                log.info("- {} font differences found", result.getFontDifferences().size());
+            }
+        }
     }
 }
