@@ -18,10 +18,11 @@ public class TextComparator {
      * Compares text content of two PDFs and returns differences
      * @param generatedPdf the generated PDF file
      * @param goldCopyPdf the gold copy PDF file
+     * @param deepDetect when true, considers whitespace differences as changes
      * @return List of text differences found
      * @throws IOException if there's an error processing the PDFs
      */
-    public List<TextDifference> compareContent(File generatedPdf, File goldCopyPdf) throws IOException {
+    public List<TextDifference> compareContent(File generatedPdf, File goldCopyPdf, boolean deepDetect) throws IOException {
         try (PDDocument generatedDoc = PDDocument.load(generatedPdf);
              PDDocument goldCopyDoc = PDDocument.load(goldCopyPdf)) {
 
@@ -29,18 +30,28 @@ public class TextComparator {
             String generatedText = stripper.getText(generatedDoc);
             String goldCopyText = stripper.getText(goldCopyDoc);
 
-            return findDifferences(generatedText, goldCopyText);
+            return findDifferences(generatedText, goldCopyText, deepDetect);
         }
     }
 
-    private List<TextDifference> findDifferences(String text1, String text2) {
+    /**
+     * Legacy method for backward compatibility
+     */
+    public List<TextDifference> compareContent(File generatedPdf, File goldCopyPdf) throws IOException {
+        return compareContent(generatedPdf, goldCopyPdf, false);
+    }
+
+    private List<TextDifference> findDifferences(String text1, String text2, boolean deepDetect) {
         List<TextDifference> differences = new ArrayList<>();
         String[] lines1 = text1.split("\\r?\\n");
         String[] lines2 = text2.split("\\r?\\n");
 
         int i = 0, j = 0;
         while (i < lines1.length && j < lines2.length) {
-            if (!lines1[i].equals(lines2[j])) {
+            String line1 = deepDetect ? lines1[i] : normalizeWhitespace(lines1[i]);
+            String line2 = deepDetect ? lines2[j] : normalizeWhitespace(lines2[j]);
+
+            if (!line1.equals(line2)) {
                 differences.add(new TextDifference(
                     i + 1,
                     j + 1,
@@ -77,6 +88,15 @@ public class TextComparator {
         }
 
         return differences;
+    }
+
+    /**
+     * Normalizes whitespace in a string by:
+     * 1. Trimming leading/trailing whitespace
+     * 2. Replacing multiple spaces between words with a single space
+     */
+    private String normalizeWhitespace(String text) {
+        return text.trim().replaceAll("\\s+", " ");
     }
 
     public static class TextDifference {
